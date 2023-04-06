@@ -54,7 +54,7 @@ class Main:
                 for k in range(0, 6):
                     # Update pk 
                     strategy_success_num_sum = sum([sum(arr) for arr in Main.strategy_success_num_list])
-                    Main.pk[k] = sum(Main.strategy_success_num_list[k])/strategy_success_num_sum
+                    Main.pk[k] = sum(Main.strategy_success_num_list[k])/(strategy_success_num_sum + Main.epsilon)
                     if len(Main.Fki_success_heap[k]) != 0:
                         Main.fk[k] = statistics.median(Main.Fki_success_heap[k])
                     else:
@@ -142,7 +142,7 @@ class Main:
     
     def crossover(self, ind):
         rand_num = random.randint(0, Main.m-1)
-        ui = ind.vector
+        ui = copy.deepcopy(ind.vector)
         for k in range(Main.m):
             if random.random() < ind.CRki or k == rand_num:
                 ui[k] = ind.vi[k]
@@ -164,9 +164,10 @@ class Main:
         
         for j in range(Main.population_size):
             ind:individual = Main.individual_list[j]
-            if self.calculate_value(ind.ui) < ind.value:
+            maybe_new_value = self.calculate_value(ind.ui)
+            if maybe_new_value < ind.value:
                 ind.vector = ind.ui
-                ind.calculate_value()
+                ind.value = maybe_new_value
                 Main.Fki_success_heap[strategy_index].append(ind.Fki)
                 Main.Fki_success_list[strategy_index][Main.generation%Main.LP].append(ind.Fki)
                 Main.CRki_success_heap[strategy_index].append(ind.CRki)
@@ -182,13 +183,11 @@ class Main:
         # Calculate the opening cost
         result += np.inner(vector, Main.f)
         
-        # Calculate the facility-customer cost
-        for i in range(0, Main.n):
-            temp = int(sys.maxsize)
-            for j in range(0, Main.m):
-                if vector[j] and Main.c[i][j] < temp:
-                    temp = Main.c[i][j]
-            result += temp
+        open_facility_indexes = np.where(vector)[0]
+        if len(open_facility_indexes) == 0:
+            return sys.maxsize
+        temp = np.min(Main.c[:, open_facility_indexes], axis=1)
+        result += np.sum(temp)
         return result
             
     def test(self):  # This is just a test for correctness verify
@@ -211,13 +210,12 @@ class individual:
         # Calculate the opening cost
         result += np.inner(self.vector, Main.f)
         
-        # Calculate the facility-customer cost
-        for i in range(0, Main.n):
-            temp = int(sys.maxsize)
-            for j in range(0, Main.m):
-                if self.vector[j] and Main.c[i][j] < temp:
-                    temp = Main.c[i][j]
-            result += temp
+        open_facility_indexes = np.where(self.vector)[0]
+        if len(open_facility_indexes) == 0:
+            self.value = sys.maxsize
+            return
+        temp = np.min(Main.c[:, open_facility_indexes], axis=1)
+        result += np.sum(temp)
         
         self.value = result
 
@@ -330,6 +328,7 @@ def read_data(datapath):
         Main.m, Main.n, Main.f, Main.c = getData(datapath=datapath)
 
 def run():
+    global f
     # datapath_list = ['/Users/YeungYathin/Desktop/创新实践/复现代码/SabDE/M/O/MO1',
     #                  '/Users/YeungYathin/Desktop/创新实践/复现代码/SabDE/M/O/MO2',
     #                  '/Users/YeungYathin/Desktop/创新实践/复现代码/SabDE/M/O/MO3',

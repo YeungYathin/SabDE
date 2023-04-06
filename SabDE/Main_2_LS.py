@@ -39,6 +39,7 @@ class Main:
 
     def __init__(self, goal_generation = 250, epsilon = 0.0000000000000000000000001):
         Main.population_size = Main.m
+        # Main.population_size = 20
         Main.LP = Main.population_size
         Main.goal_generation = goal_generation
         Main.epsilon = epsilon
@@ -54,7 +55,7 @@ class Main:
                 for k in range(0, 6):
                     # Update pk 
                     strategy_success_num_sum = sum([sum(arr) for arr in Main.strategy_success_num_list])
-                    Main.pk[k] = sum(Main.strategy_success_num_list[k])/strategy_success_num_sum
+                    Main.pk[k] = sum(Main.strategy_success_num_list[k])/(strategy_success_num_sum + Main.epsilon)
                     if len(Main.Fki_success_heap[k]) != 0:
                         Main.fk[k] = statistics.median(Main.Fki_success_heap[k])
                     else:
@@ -130,7 +131,6 @@ class Main:
         for j in range(0, Main.population_size):
             Main.chaotic_var = 4*Main.chaotic_var*(1-Main.chaotic_var)
             Main.individual_list[j].Fki = Main.fk[strategy_index]+0.2*(Main.chaotic_var-0.5)
-            # print(Main.c)
             while Main.individual_list[j].Fki > 1.5 or Main.individual_list[j].Fki < 0:
                 Main.chaotic_var = 4*Main.chaotic_var*(1-Main.chaotic_var)
                 Main.individual_list[j].Fki = Main.fk[strategy_index]+0.2*(Main.chaotic_var-0.5)
@@ -142,12 +142,10 @@ class Main:
                 Main.individual_list[j].CRki = Main.fk[strategy_index]+0.1*(Main.chaotic_var-0.5)
     
     def crossover(self, ind):
-        rand_num = random.randint(0, Main.m-1)
-        ui = ind.vector
-        for k in range(Main.m):
-            if random.random() < ind.CRki or k == rand_num:
-                ui[k] = ind.vi[k]
-        ind.ui = ui
+        rand_num = np.random.randint(0, Main.m)
+        mask = (np.random.rand(Main.m) < ind.CRki) | (np.arange(Main.m) == rand_num)
+        ind.ui = ind.vector.copy()
+        ind.ui[mask] = ind.vi[mask]
 
     def greedy_selection(self, strategy_index):
         Main.value_list = []
@@ -248,10 +246,10 @@ def strategy_1(ind:individual):
         rand_nums.add(rand_num)
     r1, r2, r3 = rand_nums
     vi1 = np.logical_xor(Main.individual_list[r2].vector, Main.individual_list[r3].vector)
-    Ii = np.zeros(Main.m)
-    for j in range(0, Main.m):
-        if random.random() < ind.Fki:
-            Ii[j] = 1
+    
+    Ii = np.random.rand(Main.m) < ind.Fki
+    Ii = Ii.astype(int)
+    
     vi1 = np.logical_and(vi1, Ii)
     vi = np.logical_xor(vi1, Main.individual_list[r1].vector)
     ind.vi = vi
@@ -263,10 +261,10 @@ def strategy_2(ind:individual):
         rand_nums.add(rand_num)
     r1, r2 = rand_nums
     vi1 = np.logical_xor(Main.individual_list[r1].vector, Main.individual_list[r2].vector)
-    Ii = np.zeros(Main.m)
-    for j in range(0, Main.m):
-        if random.random() < ind.Fki:
-            Ii[j] = 1
+    
+    Ii = np.random.rand(Main.m) < ind.Fki
+    Ii = Ii.astype(int)
+    
     vi1 = np.logical_and(vi1, Ii)
     vi = np.logical_xor(vi1, Main.best_individual.vector)
     ind.vi = vi
@@ -279,10 +277,10 @@ def strategy_3(ind:individual):
     r1, r2, r3, r4, r5 = rand_nums
     vi1 = np.logical_xor(Main.individual_list[r2].vector, Main.individual_list[r3].vector)
     vi2 = np.logical_xor(Main.individual_list[r4].vector, Main.individual_list[r5].vector)
-    Ii = np.zeros(Main.m)
-    for j in range(0, Main.m):
-        if random.random() < ind.Fki:
-            Ii[j] = 1
+    
+    Ii = np.random.rand(Main.m) < ind.Fki
+    Ii = Ii.astype(int)
+    
     vi1 = np.logical_and(vi1, Ii)
     vi2 = np.logical_and(vi2, Ii)
     vi = np.logical_or(vi1, vi2)
@@ -297,10 +295,10 @@ def strategy_4(ind:individual):
     r1, r2, r3, r4 = rand_nums
     vi1 = np.logical_xor(Main.individual_list[r1].vector, Main.individual_list[r2].vector)
     vi2 = np.logical_xor(Main.individual_list[r3].vector, Main.individual_list[r4].vector)
-    Ii = np.zeros(Main.m)
-    for j in range(0, Main.m):
-        if random.random() < ind.Fki:
-            Ii[j] = 1
+    
+    Ii = np.random.rand(Main.m) < ind.Fki
+    Ii = Ii.astype(int)
+    
     vi1 = np.logical_and(vi1, Ii)
     vi2 = np.logical_and(vi2, Ii)
     vi = np.logical_or(vi1, vi2)
@@ -315,10 +313,10 @@ def strategy_5(ind:individual):
     r1, r2 = rand_nums
     vi1 = np.logical_xor(Main.best_individual.vector, ind.vector)
     vi2 = np.logical_xor(Main.individual_list[r1].vector, Main.individual_list[r2].vector)
-    Ii = np.zeros(Main.m)
-    for j in range(0, Main.m):
-        if random.random() < ind.Fki:
-            Ii[j] = 1
+    
+    Ii = np.random.rand(Main.m) < ind.Fki
+    Ii = Ii.astype(int)
+    
     vi1 = np.logical_and(vi1, Ii)
     vi2 = np.logical_and(vi2, Ii)
     vi = np.logical_or(vi1, vi2)
@@ -334,10 +332,10 @@ def strategy_6(ind:individual):
     vi1 = np.logical_xor(Main.best_individual.vector, ind.vector)
     vi2 = np.logical_xor(Main.individual_list[r1].vector, Main.individual_list[r2].vector)
     vi3 = np.logical_xor(Main.individual_list[r3].vector, Main.individual_list[r4].vector)
-    Ii = np.zeros(Main.m)
-    for j in range(0, Main.m):
-        if random.random() < ind.Fki:
-            Ii[j] = 1
+    
+    Ii = np.random.rand(Main.m) < ind.Fki
+    Ii = Ii.astype(int)
+    
     vi1 = np.logical_and(vi1, Ii)
     vi2 = np.logical_and(vi2, Ii)
     vi3 = np.logical_and(vi3, Ii)
@@ -367,7 +365,7 @@ def run():
     for datapath in datapath_list:
         read_data(datapath=datapath)
         instance = datapath.split('/')[-1].strip()
-        output_filename = f'/Users/YeungYathin/Desktop/创新实践/复现代码/SabDE/OUTPUT_0/{instance}_result.txt'
+        output_filename = f'/Users/YeungYathin/Desktop/创新实践/复现代码/SabDE/OUTPUT_2_LS/{instance}_result.txt'
         f = open(output_filename, 'w+')
         print(f'INSTANCE: {instance}\n')
         print(f'TOTAL GENERATION IS: {Main.goal_generation}\n')
